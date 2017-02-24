@@ -1,0 +1,14 @@
+{{template "header.tmpl"}}
+
+<div class="container">
+  {{if .Error}}
+    <div class="alert alert-danger">{{.Error}}</div>
+  {{end}}
+
+  <form action="/entries/create" method="POST">
+    {{.Fields.RenderBootstrap}}
+    {{.CsrfField}}
+    <button class="btn btn-primary" type="submit">Create</button>
+    or <a href="/">go back to listing</a>.
+  </form>
+</div>

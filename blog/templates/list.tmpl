@@ -1,0 +1,24 @@
+{{template "header.tmpl"}}
+
+<div class="container">
+  <div>
+    {{if .Entries}}
+      <a href="/entries/create">Write blog entry</a>
+    {{else}}
+      <div class="alert alert-info">
+        <strong>No entries.</strong> Create <a href="/entries/create">new blog entry</a>.
+      </div>
+    {{end}}
+  </div>
+
+  {{range .Entries}}
+    <article>
+      <h2>
+        {{.Title}}
+        <small>{{.Created.Format "Mon, Jan 2 15:04"}}</small>
+      </h2>
+      <p>{{.ContentSummary}}</p>
+      <p><a href="/entries/{{.ID}}">Read more..</a></p>
+    </article>
+  {{end}}
+</div>

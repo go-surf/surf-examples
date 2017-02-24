@@ -1,0 +1,15 @@
+{{template "header.tmpl"}}
+
+<div class="container">
+  <article>
+    <h1>
+      {{.Entry.Title}}
+      <small>{{.Entry.Created.Format "Mon, Jan 2 15:04"}}</small>
+    </h1>
+    <p>{{.Entry.Content}}</p>
+  </article>
+
+  <hr>
+  <a href="/">Go back to listing</a>
+</div>
+
