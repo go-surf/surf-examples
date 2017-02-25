@@ -35,8 +35,10 @@ func main() {
 
 	flashEngine := surf.NewFlashCookieEngine(conf.Secret)
 
-	app := csrf.Protect(conf.Secret, tmpl,
-		surf.WithFlashMessages(flashEngine, rt))
+	app := surf.WithRequestID(
+		surf.WithLogging(
+			csrf.Protect(conf.Secret, tmpl,
+				surf.WithFlashMessages(flashEngine, rt))))
 	if err := http.ListenAndServe(conf.HTTP, app); err != nil {
 		log.Fatalf("http server: %v", err)
 	}
