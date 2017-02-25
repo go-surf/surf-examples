@@ -1,0 +1,9 @@
+{{if .}}
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+      {{range .}}
+        <div class="alert alert-{{.Category}}">{{.Content}}</div>
+      {{end}}
+    </div>
+  </div>
+{{end}}

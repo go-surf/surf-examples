@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -28,7 +29,7 @@ func (e *Entry) ContentSummary() string {
 	return e.Content[:200] + "[..]"
 }
 
-func (es *EntryStore) ByID(entryID string) (*Entry, error) {
+func (es *EntryStore) ByID(ctx context.Context, entryID string) (*Entry, error) {
 	es.mu.Lock()
 	defer es.mu.Unlock()
 
@@ -40,7 +41,7 @@ func (es *EntryStore) ByID(entryID string) (*Entry, error) {
 	return nil, ErrNotFound
 }
 
-func (es *EntryStore) Latest(limit int) ([]Entry, error) {
+func (es *EntryStore) Latest(ctx context.Context, limit int) ([]Entry, error) {
 	es.mu.Lock()
 	defer es.mu.Unlock()
 
@@ -53,7 +54,7 @@ func (es *EntryStore) Latest(limit int) ([]Entry, error) {
 	return es.entries[:limit], nil
 }
 
-func (es *EntryStore) Create(title, content string) (*Entry, error) {
+func (es *EntryStore) Create(ctx context.Context, title, content string) (*Entry, error) {
 	id := make([]byte, 16)
 	if _, err := rand.Read(id); err != nil {
 		return nil, fmt.Errorf("cannot generate id: %s", err)
@@ -71,6 +72,19 @@ func (es *EntryStore) Create(title, content string) (*Entry, error) {
 
 	es.entries = append(es.entries, entry)
 	return &entry, nil
+}
+
+func (es *EntryStore) Delete(ctx context.Context, entryID string) error {
+	es.mu.Lock()
+	defer es.mu.Unlock()
+
+	for i, entry := range es.entries {
+		if entry.ID == entryID {
+			es.entries = append(es.entries[:i], es.entries[i+1:]...)
+			return nil
+		}
+	}
+	return ErrNotFound
 }
 
 var ErrNotFound = errors.New("not found")

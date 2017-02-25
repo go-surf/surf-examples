@@ -1,6 +1,9 @@
 {{template "header.tmpl"}}
 
+
 <div class="container">
+  {{template "flash_messages.tmpl" .FlashMessages}}
+
   <article>
     <h1>
       {{.Entry.Title}}
@@ -10,6 +13,6 @@
   </article>
 
   <hr>
-  <a href="/">Go back to listing</a>
+  <a href="/">Go back to listing</a> or
+  <a href="/entries/{{.Entry.ID}}/delete">delete this entry</a>.
 </div>
-

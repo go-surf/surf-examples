@@ -14,7 +14,7 @@ func ListEntriesHandler(
 	rend surf.Renderer,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		entries, err := store.Latest(3)
+		entries, err := store.Latest(r.Context(), 20)
 		if err != nil {
 			log.Fatalf("cannot get latest entries: %s", err)
 			rend.RenderDefault(w, http.StatusInternalServerError)
@@ -22,9 +22,11 @@ func ListEntriesHandler(
 		}
 
 		rend.Render(w, http.StatusOK, "list.tmpl", struct {
-			Entries []Entry
+			FlashMessages []surf.FlashMessage
+			Entries       []Entry
 		}{
-			Entries: entries,
+			FlashMessages: surf.ConsumeFlashMessages(r.Context()),
+			Entries:       entries,
 		})
 	}
 }
@@ -51,17 +53,20 @@ func CreateEntryHandler(
 				rend.Render(w, http.StatusBadRequest, "create.tmpl", content{
 					Error:     err,
 					Fields:    form.Render(r),
-					CsrfField: csrf.Tag(r),
+					CsrfField: csrf.FormField(r),
 				})
 				return
 			}
 			if form.IsValid(r) {
-				entry, err := store.Create(r.Form.Get("title"), r.Form.Get("content"))
+				entry, err := store.Create(r.Context(),
+					r.Form.Get("title"), r.Form.Get("content"))
 				if err != nil {
 					log.Printf("cannot create entry: %s", err)
 					rend.RenderDefault(w, http.StatusInternalServerError)
 					return
 				}
+
+				surf.AddFlashMessage(r.Context(), "success", "Blog entry created")
 				http.Redirect(w, r, "/entries/"+entry.ID, http.StatusSeeOther)
 				return
 			}
@@ -73,7 +78,7 @@ func CreateEntryHandler(
 		}
 		rend.Render(w, code, "create.tmpl", content{
 			Fields:    form.Render(r),
-			CsrfField: csrf.Tag(r),
+			CsrfField: csrf.FormField(r),
 		})
 	}
 }
@@ -83,7 +88,7 @@ func ShowEntryHandler(
 	rend surf.Renderer,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		entry, err := store.ByID(surf.PathArg(r, 0))
+		entry, err := store.ByID(r.Context(), surf.PathArg(r, 0))
 		switch err {
 		case nil:
 			// all good
@@ -97,9 +102,52 @@ func ShowEntryHandler(
 		}
 
 		rend.Render(w, http.StatusOK, "show.tmpl", struct {
-			Entry *Entry
+			FlashMessages []surf.FlashMessage
+			Entry         *Entry
 		}{
-			Entry: entry,
+			FlashMessages: surf.ConsumeFlashMessages(r.Context()),
+			Entry:         entry,
 		})
+	}
+}
+
+func DeleteEntryHandler(
+	store *EntryStore,
+	rend surf.Renderer,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			entry, err := store.ByID(r.Context(), surf.PathArg(r, 0))
+			switch err {
+			case nil:
+				// all good
+			case ErrNotFound:
+				rend.RenderDefault(w, http.StatusNotFound)
+				return
+			default:
+				log.Printf("cannot get entry by id: %s", err)
+				rend.RenderDefault(w, http.StatusInternalServerError)
+				return
+			}
+			rend.Render(w, http.StatusOK, "delete.tmpl", struct {
+				CsrfField template.HTML
+				Entry     *Entry
+			}{
+				CsrfField: csrf.FormField(r),
+				Entry:     entry,
+			})
+			return
+		}
+
+		switch err := store.Delete(r.Context(), surf.PathArg(r, 0)); err {
+		case nil:
+			surf.AddFlashMessage(r.Context(), "info", "Blog entry deleted")
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		case ErrNotFound:
+			rend.RenderDefault(w, http.StatusNotFound)
+		default:
+			log.Printf("cannot delete entry: %s", err)
+			rend.RenderDefault(w, http.StatusInternalServerError)
+		}
 	}
 }

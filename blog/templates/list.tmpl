@@ -1,15 +1,14 @@
 {{template "header.tmpl"}}
 
+
 <div class="container">
+  {{template "flash_messages.tmpl" .FlashMessages}}
+
   <div>
-    {{if .Entries}}
-      <a href="/entries/create">Write blog entry</a>
-    {{else}}
-      <div class="alert alert-info">
-        <strong>No entries.</strong> Create <a href="/entries/create">new blog entry</a>.
-      </div>
-    {{end}}
+      <a class="btn btn-default" href="/entries/create">Write new blog entry</a>
   </div>
+
+  <hr>
 
   {{range .Entries}}
     <article>
@@ -18,7 +17,11 @@
         <small>{{.Created.Format "Mon, Jan 2 15:04"}}</small>
       </h2>
       <p>{{.ContentSummary}}</p>
-      <p><a href="/entries/{{.ID}}">Read more..</a></p>
+      <p><a href="/entries/{{.ID}}">Read more</a></p>
     </article>
+  {{else}}
+      <div class="alert alert-warning">
+        <strong>No entries.</strong> Create <a href="/entries/create">new blog entry</a>.
+      </div>
   {{end}}
 </div>

@@ -31,8 +31,12 @@ func main() {
 	rt.Add("/", "GET", ListEntriesHandler(&store, tmpl))
 	rt.Add("/entries/create", "GET,POST", CreateEntryHandler(&store, tmpl))
 	rt.Add("/entries/(id)", "GET", ShowEntryHandler(&store, tmpl))
+	rt.Add("/entries/(id)/delete", "GET,POST", DeleteEntryHandler(&store, tmpl))
 
-	app := csrf.Protect(rt, conf.Secret, tmpl)
+	flashEngine := surf.NewFlashCookieEngine(conf.Secret)
+
+	app := csrf.Protect(conf.Secret, tmpl,
+		surf.WithFlashMessages(flashEngine, rt))
 	if err := http.ListenAndServe(conf.HTTP, app); err != nil {
 		log.Fatalf("http server: %v", err)
 	}
