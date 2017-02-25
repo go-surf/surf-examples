@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/husio/surf"
-	"github.com/husio/surf/csrf"
+	"github.com/go-surf/surf"
+	"github.com/go-surf/surf/csrf"
 )
 
 type configuration struct {

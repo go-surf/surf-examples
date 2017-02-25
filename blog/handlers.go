@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/husio/surf"
-	"github.com/husio/surf/csrf"
+	"github.com/go-surf/surf"
+	"github.com/go-surf/surf/csrf"
 )
 
 func ListEntriesHandler(

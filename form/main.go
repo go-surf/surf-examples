@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/husio/surf"
+	"github.com/go-surf/surf"
 )
 
 func main() {
