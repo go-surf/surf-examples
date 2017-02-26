@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -10,8 +11,9 @@ import (
 )
 
 type configuration struct {
-	HTTP   string
-	Secret string
+	HTTP     string
+	Secret   string
+	Database string
 }
 
 func main() {
@@ -19,19 +21,32 @@ func main() {
 	log.SetFlags(0)
 
 	conf := configuration{
-		HTTP:   env("HTTP", "127.0.0.1:8000"),
-		Secret: env("SECRET", "asjdosaihdqohwd08hywqd0dwq8hoidahsaoihdqohdwqwqd9hgas"),
+		HTTP:     env("HTTP", "127.0.0.1:8000"),
+		Secret:   env("SECRET", "asjdosaihdqohwd08hywqd0dwq8hoidahsaoihdqohdwqwqd9hgas"),
+		Database: env("DATABASE", ""),
 	}
 
 	var store EntryStore
+	if conf.Database == "" {
+		store = &MemoryEntryStore{}
+	} else {
+		if s, err := OpenSqliteEntryStore(conf.Database); err != nil {
+			log.Fatalf("cannot connect to database: %s", err)
+		} else {
+			if err := s.Migrate(context.Background()); err != nil {
+				log.Fatalf("cannot migrate sqlite: %s", err)
+			}
+			store = s
+		}
+	}
 
 	tmpl := surf.LoadTemplates("./templates/*.tmpl")
 
 	rt := surf.NewRouter()
-	rt.Add("/", "GET", ListEntriesHandler(&store, tmpl))
-	rt.Add("/entries/create", "GET,POST", CreateEntryHandler(&store, tmpl))
-	rt.Add("/entries/(id)", "GET", ShowEntryHandler(&store, tmpl))
-	rt.Add("/entries/(id)/delete", "GET,POST", DeleteEntryHandler(&store, tmpl))
+	rt.Add("/", "GET", ListEntriesHandler(store, tmpl))
+	rt.Add("/entries/create", "GET,POST", CreateEntryHandler(store, tmpl))
+	rt.Add("/entries/(id)", "GET", ShowEntryHandler(store, tmpl))
+	rt.Add("/entries/(id)/delete", "GET,POST", DeleteEntryHandler(store, tmpl))
 
 	flashEngine := surf.NewFlashCookieEngine(conf.Secret)
 

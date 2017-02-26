@@ -10,7 +10,7 @@ import (
 )
 
 func ListEntriesHandler(
-	store *EntryStore,
+	store EntryStore,
 	rend surf.Renderer,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +32,7 @@ func ListEntriesHandler(
 }
 
 func CreateEntryHandler(
-	store *EntryStore,
+	store EntryStore,
 	rend surf.Renderer,
 ) http.HandlerFunc {
 
@@ -84,7 +84,7 @@ func CreateEntryHandler(
 }
 
 func ShowEntryHandler(
-	store *EntryStore,
+	store EntryStore,
 	rend surf.Renderer,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +112,7 @@ func ShowEntryHandler(
 }
 
 func DeleteEntryHandler(
-	store *EntryStore,
+	store EntryStore,
 	rend surf.Renderer,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
