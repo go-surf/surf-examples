@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-surf/surf"
 	"github.com/go-surf/surf/csrf"
+	"github.com/go-surf/surf/jwt"
 )
 
 type configuration struct {
@@ -29,6 +30,7 @@ func main() {
 	var store EntryStore
 	if conf.Database == "" {
 		store = &MemoryEntryStore{}
+		log.Println("using in memory storage")
 	} else {
 		if s, err := OpenSqliteEntryStore(conf.Database); err != nil {
 			log.Fatalf("cannot connect to database: %s", err)
@@ -40,15 +42,20 @@ func main() {
 		}
 	}
 
+	signer := jwt.HMAC384(conf.Secret, "")
+
 	tmpl := surf.LoadTemplates("./templates/*.tmpl")
 
 	rt := surf.NewRouter()
-	rt.Add("/", "GET", ListEntriesHandler(store, tmpl))
-	rt.Add("/entries/create", "GET,POST", CreateEntryHandler(store, tmpl))
+	rt.Add("/", "GET", ListEntriesHandler(store, signer, tmpl))
+	rt.Add("/entries/create", "GET,POST", CreateEntryHandler(store, signer, tmpl))
 	rt.Add("/entries/(id)", "GET", ShowEntryHandler(store, tmpl))
-	rt.Add("/entries/(id)/delete", "GET,POST", DeleteEntryHandler(store, tmpl))
+	rt.Add("/entries/(id)/delete", "GET,POST", DeleteEntryHandler(store, signer, tmpl))
 
-	flashEngine := surf.NewFlashCookieEngine(conf.Secret)
+	rt.Add("/login", "GET", LoginHandler(signer, tmpl))
+	rt.Add("/logout", "GET", LogoutHandler())
+
+	flashEngine := surf.NewFlashCookieEngine(signer)
 
 	app := surf.WithRequestID(
 		surf.WithLogging(

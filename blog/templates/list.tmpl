@@ -6,6 +6,15 @@
 
   <div>
       <a class="btn btn-default" href="/entries/create">Write new blog entry</a>
+
+      <div class="pull-right">
+        {{if .User.Authenticated}}
+          Hello <strong>{{.User.Name}}</strong>,
+          would you like to <a href="/logout">logout</a>?
+        {{else}}
+          Good day sir! Would you wish to <a href="/login">login</a>?
+        {{end}}
+      </div>
   </div>
 
   <hr>

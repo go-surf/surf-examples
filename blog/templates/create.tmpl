@@ -8,6 +8,7 @@
   <form action="/entries/create" method="POST">
     {{.Fields.RenderBootstrap}}
     {{.CsrfField}}
+    <p>Publishing as <em>{{.User.Name}}</em></p>
     <button class="btn btn-primary" type="submit">Create</button>
     or <a href="/">go back to listing</a>.
   </form>

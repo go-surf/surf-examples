@@ -11,9 +11,13 @@ import (
 
 func ListEntriesHandler(
 	store EntryStore,
+	verifier surf.Verifier,
 	rend surf.Renderer,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var user User
+		surf.CurrentAccount(r, verifier, &user)
+
 		entries, err := store.Latest(r.Context(), 20)
 		if err != nil {
 			log.Fatalf("cannot get latest entries: %s", err)
@@ -24,15 +28,18 @@ func ListEntriesHandler(
 		rend.Render(w, http.StatusOK, "list.tmpl", struct {
 			FlashMessages []surf.FlashMessage
 			Entries       []Entry
+			User          *User
 		}{
 			FlashMessages: surf.ConsumeFlashMessages(r.Context()),
 			Entries:       entries,
+			User:          &user,
 		})
 	}
 }
 
 func CreateEntryHandler(
 	store EntryStore,
+	verifier surf.Verifier,
 	rend surf.Renderer,
 ) http.HandlerFunc {
 
@@ -44,15 +51,23 @@ func CreateEntryHandler(
 	type content struct {
 		Error     error
 		Fields    surf.RenderedFields
+		User      *User
 		CsrfField template.HTML
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		var user User
+		if !surf.CurrentAccount(r, verifier, &user) {
+			rend.RenderDefault(w, http.StatusUnauthorized)
+			return
+		}
+
 		if r.Method == "POST" {
 			if err := r.ParseForm(); err != nil {
 				rend.Render(w, http.StatusBadRequest, "create.tmpl", content{
 					Error:     err,
 					Fields:    form.Render(r),
+					User:      &user,
 					CsrfField: csrf.FormField(r),
 				})
 				return
@@ -78,6 +93,7 @@ func CreateEntryHandler(
 		}
 		rend.Render(w, code, "create.tmpl", content{
 			Fields:    form.Render(r),
+			User:      &user,
 			CsrfField: csrf.FormField(r),
 		})
 	}
@@ -113,9 +129,15 @@ func ShowEntryHandler(
 
 func DeleteEntryHandler(
 	store EntryStore,
+	verifier surf.Verifier,
 	rend surf.Renderer,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if !surf.CurrentAccount(r, verifier, &User{}) {
+			rend.RenderDefault(w, http.StatusUnauthorized)
+			return
+		}
+
 		if r.Method == "GET" {
 			entry, err := store.ByID(r.Context(), surf.PathArg(r, 0))
 			switch err {
@@ -150,4 +172,35 @@ func DeleteEntryHandler(
 			rend.RenderDefault(w, http.StatusInternalServerError)
 		}
 	}
+}
+
+func LoginHandler(
+	signer surf.Signer,
+	rend surf.Renderer,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if surf.CurrentAccount(r, signer, &User{}) {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		surf.Login(w, signer, &User{ID: 5, Name: "Bob"})
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+func LogoutHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		surf.Logout(w)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+type User struct {
+	ID   int
+	Name string
+}
+
+func (u *User) Authenticated() bool {
+	return u.ID != 0
 }
